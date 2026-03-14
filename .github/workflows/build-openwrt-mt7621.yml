@@ -1,0 +1,46 @@
+name: Build OpenWrt mt7621 Binary
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - "src/**"
+      - "scripts/build-openwrt-mt7621.sh"
+      - ".github/workflows/build-openwrt-mt7621.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-mt7621-binary:
+    name: Build linux/mipsle (GOMIPS=softfloat)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+          cache-dependency-path: src/go.sum
+
+      - name: Build OpenWrt mt7621 binary
+        run: ./scripts/build-openwrt-mt7621.sh
+
+      - name: Verify output exists
+        run: |
+          VERSION=$(sed -n 's/^release_version="\([^"]*\)"/\1/p' scripts/build.sh | head -n1)
+          test -x "dist/ua3f-${VERSION}-linux-mipsel_24kc"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ua3f-linux-mipsel_24kc
+          path: dist/ua3f-*-linux-mipsel_24kc
+          if-no-files-found: error
+          retention-days: 7
